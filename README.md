@@ -7,15 +7,15 @@
   A process for automating Docker container base image updates.
   <br/><br/>
   
-  [![Circle CI](https://circleci.com/gh/containrrr/watchtower.svg?style=shield)](https://circleci.com/gh/containrrr/watchtower)
-  [![codecov](https://codecov.io/gh/containrrr/watchtower/branch/main/graph/badge.svg)](https://codecov.io/gh/containrrr/watchtower)
-  [![GoDoc](https://godoc.org/github.com/containrrr/watchtower?status.svg)](https://godoc.org/github.com/containrrr/watchtower)
-  [![Go Report Card](https://goreportcard.com/badge/github.com/containrrr/watchtower)](https://goreportcard.com/report/github.com/containrrr/watchtower)
-  [![latest version](https://img.shields.io/github/tag/containrrr/watchtower.svg)](https://github.com/containrrr/watchtower/releases)
-  [![Apache-2.0 License](https://img.shields.io/github/license/containrrr/watchtower.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-  [![Codacy Badge](https://app.codacy.com/project/badge/Grade/1c48cfb7646d4009aa8c6f71287670b8)](https://www.codacy.com/gh/containrrr/watchtower/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=containrrr/watchtower&amp;utm_campaign=Badge_Grade)
-  [![All Contributors](https://img.shields.io/github/all-contributors/containrrr/watchtower)](#contributors)
-  [![Pulls from DockerHub](https://img.shields.io/docker/pulls/containrrr/watchtower.svg)](https://hub.docker.com/r/containrrr/watchtower)
+  [![Circle CI](https://circleci.com/gh/guchengod/watchtower.svg?style=shield)](https://circleci.com/gh/guchengod/watchtower)
+  [![codecov](https://codecov.io/gh/guchengod/watchtower/branch/main/graph/badge.svg)](https://codecov.io/gh/guchengod/watchtower)
+  [![GoDoc](https://godoc.org/github.com/guchengod/watchtower?status.svg)](https://godoc.org/github.com/guchengod/watchtower)
+  [![Go Report Card](https://goreportcard.com/badge/github.com/guchengod/watchtower)](https://goreportcard.com/report/github.com/guchengod/watchtower)
+  [![latest version](https://img.shields.io/github/tag/guchengod/watchtower.svg)](https://github.com/guchengod/watchtower/releases)
+  [![Apache-2.0 License](https://img.shields.io/github/license/guchengod/watchtower.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+  [![Codacy Badge](https://app.codacy.com/project/badge/Grade/1c48cfb7646d4009aa8c6f71287670b8)](https://www.codacy.com/gh/guchengod/watchtower/dashboard?utm_source=github.com&amp;utm_medium=referral&amp&utm_content=guchengod/watchtower&amp;utm_campaign=Badge_Grade)
+  [![All Contributors](https://img.shields.io/github/all-contributors/guchengod/watchtower)](#contributors)
+  [![Pulls from DockerHub](https://img.shields.io/docker/pulls/guchengod/watchtower.svg)](https://hub.docker.com/r/guchengod/watchtower)
 
 </div>
 
@@ -29,7 +29,7 @@ Watchtower will pull down your new image, gracefully shut down your existing con
 $ docker run --detach \
     --name watchtower \
     --volume /var/run/docker.sock:/var/run/docker.sock \
-    containrrr/watchtower
+    guchengod/watchtower
 ```
 
 Watchtower is intended to be used in homelabs, media centers, local dev environments, and similar. We do **not** recommend using Watchtower in a commercial or production environment. If that is you, you should be looking into using Kubernetes. If that feels like too big a step for you, please look into solutions like [MicroK8s](https://microk8s.io/) and [k3s](https://k3s.io/) that take away a lot of the toil of running a Kubernetes cluster. 
