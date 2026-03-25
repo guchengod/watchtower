@@ -38,6 +38,7 @@ The following arguments are currently supported (including their corresponding `
  - `notification-slack-hook-url`
  - `notification-msteams-hook`
  - `notification-gotify-token`
+ - `http-api-port`
  - `http-api-token`
 
 ### Example docker-compose usage
@@ -343,6 +344,16 @@ Can also reference a file, in which case the contents of the file are used.
 Environment Variable: WATCHTOWER_HTTP_API_TOKEN
                 Type: String
              Default: -
+```
+
+## HTTP API Port
+Sets the port for the HTTP API server. If not specified, defaults to port 8080.
+
+```text
+            Argument: --http-api-port
+Environment Variable: WATCHTOWER_HTTP_PORT
+                Type: String
+             Default: "8080"
 ```
 
 ## HTTP API periodic polls
