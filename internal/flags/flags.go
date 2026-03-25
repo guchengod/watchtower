@@ -170,6 +170,12 @@ func RegisterSystemFlags(rootCmd *cobra.Command) {
 		envString("WATCHTOWER_HTTP_API_TOKEN"),
 		"Sets an authentication token to HTTP API requests.")
 
+	flags.StringP(
+		"http-api-port",
+		"",
+		envString("WATCHTOWER_HTTP_PORT"),
+		"Port for the HTTP API server (default 8080)")
+
 	flags.BoolP(
 		"http-api-periodic-polls",
 		"",

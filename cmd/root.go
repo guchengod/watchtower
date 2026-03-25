@@ -16,13 +16,14 @@ import (
 	"github.com/containrrr/watchtower/internal/meta"
 	"github.com/containrrr/watchtower/pkg/api"
 	apiMetrics "github.com/containrrr/watchtower/pkg/api/metrics"
+	"github.com/containrrr/watchtower/pkg/api/scheduler"
 	"github.com/containrrr/watchtower/pkg/api/update"
+	"github.com/containrrr/watchtower/pkg/api/websocket"
 	"github.com/containrrr/watchtower/pkg/container"
 	"github.com/containrrr/watchtower/pkg/filters"
 	"github.com/containrrr/watchtower/pkg/metrics"
 	"github.com/containrrr/watchtower/pkg/notifications"
 	t "github.com/containrrr/watchtower/pkg/types"
-	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
@@ -142,6 +143,7 @@ func Run(c *cobra.Command, names []string) {
 	enableMetricsAPI, _ := c.PersistentFlags().GetBool("http-api-metrics")
 	unblockHTTPAPI, _ := c.PersistentFlags().GetBool("http-api-periodic-polls")
 	apiToken, _ := c.PersistentFlags().GetString("http-api-token")
+	httpAPIPort, _ := c.PersistentFlags().GetString("http-api-port")
 	healthCheck, _ := c.PersistentFlags().GetBool("health-check")
 
 	if healthCheck {
@@ -179,7 +181,23 @@ func Run(c *cobra.Command, names []string) {
 	updateLock := make(chan bool, 1)
 	updateLock <- true
 
+	// Create scheduler controller for runtime schedule management
+	var schedulerController *scheduler.Controller
+	if scheduleSpec != "" {
+		schedulerController = scheduler.New(scheduleSpec, updateLock)
+		schedulerController.SetOnUpdate(func() {
+			metric := runUpdatesWithNotifications(filter)
+			metrics.RegisterScan(metric)
+			websocket.DefaultHub.BroadcastContainerUpdate("", "", "scheduled_update_done")
+		})
+	}
+
 	httpAPI := api.New(apiToken)
+	httpAPI.SetPort(httpAPIPort)
+	httpAPI.SetClient(client)
+	if schedulerController != nil {
+		httpAPI.SetScheduler(schedulerController)
+	}
 
 	if enableUpdateAPI {
 		updateHandler := update.New(func(images []string) {
@@ -199,11 +217,14 @@ func Run(c *cobra.Command, names []string) {
 		httpAPI.RegisterHandler(metricsHandler.Path, metricsHandler.Handle)
 	}
 
+	// Start WebSocket hub in background
+	go websocket.DefaultHub.Run()
+
 	if err := httpAPI.Start(enableUpdateAPI && !unblockHTTPAPI); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Error("failed to start API", err)
 	}
 
-	if err := runUpgradesOnSchedule(c, filter, filterDesc, updateLock); err != nil {
+	if err := runUpgradesOnSchedule(c, filter, filterDesc, schedulerController); err != nil {
 		log.Error(err)
 	}
 
@@ -309,40 +330,19 @@ func writeStartupMessage(c *cobra.Command, sched time.Time, filtering string) {
 	}
 }
 
-func runUpgradesOnSchedule(c *cobra.Command, filter t.Filter, filtering string, lock chan bool) error {
-	if lock == nil {
-		lock = make(chan bool, 1)
-		lock <- true
+func runUpgradesOnSchedule(c *cobra.Command, filter t.Filter, filtering string, schedulerCtrl *scheduler.Controller) error {
+	if schedulerCtrl == nil {
+		// No scheduler configured, nothing to do
+		return nil
 	}
 
-	scheduler := cron.New()
-	err := scheduler.AddFunc(
-		scheduleSpec,
-		func() {
-			select {
-			case v := <-lock:
-				defer func() { lock <- v }()
-				metric := runUpdatesWithNotifications(filter)
-				metrics.RegisterScan(metric)
-			default:
-				// Update was skipped
-				metrics.RegisterScan(nil)
-				log.Debug("Skipped another update already running.")
-			}
-
-			nextRuns := scheduler.Entries()
-			if len(nextRuns) > 0 {
-				log.Debug("Scheduled next run: " + nextRuns[0].Next.String())
-			}
-		})
-
-	if err != nil {
+	if err := schedulerCtrl.Start(); err != nil {
 		return err
 	}
 
-	writeStartupMessage(c, scheduler.Entries()[0].Schedule.Next(time.Now()), filtering)
-
-	scheduler.Start()
+	// Write startup message with schedule
+	schedulerCtrl.GetSchedule()
+	writeStartupMessage(c, time.Time{}, filtering)
 
 	// Graceful shut-down on SIGINT/SIGTERM
 	interrupt := make(chan os.Signal, 1)
@@ -350,9 +350,8 @@ func runUpgradesOnSchedule(c *cobra.Command, filter t.Filter, filtering string, 
 	signal.Notify(interrupt, syscall.SIGTERM)
 
 	<-interrupt
-	scheduler.Stop()
+	schedulerCtrl.Stop()
 	log.Info("Waiting for running update to be finished...")
-	<-lock
 	return nil
 }
 
